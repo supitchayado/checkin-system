@@ -3,98 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Check-in System</title>
+    <title>Warehouse System</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f0f2f5; color: #333; }
+        body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f0f2f5; }
         .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
-        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; }
-        input { width: 100%; padding: 12px; margin-top: 8px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; outline: none; }
-        input:focus { border-color: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.2); }
-        .btn-group { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
-        button { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; color: white; cursor: pointer; transition: transform 0.1s; }
-        button:active { transform: scale(0.98); }
+        
+        /* Modal Style */
+        .modal { display: block; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 15% auto; padding: 20px; border-radius: 15px; width: 85%; }
+        
+        label { display: block; margin-top: 10px; font-weight: 600; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        
+        .btn-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; color: white; cursor: pointer; }
+        button:disabled { background-color: #ccc !important; cursor: not-allowed; }
+        
+        .btn-reg { background-color: #1a73e8; }
         .btn-checkin { background-color: #28a745; }
         .btn-loading { background-color: #f1c40f; color: #333; }
         .btn-checkout { background-color: #dc3545; }
+        .info-box { background: #e8f0fe; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>ระบบลงเวลาเข้าพื้นที่</h2>
-    
-    <label>1) Trip no.</label>
-    <input type="number" id="tripNo" placeholder="กรอกตัวเลข Trip no.">
-
-    <label>2) Time slot</label>
-    <input type="text" id="timeSlot" placeholder="เช่น 08.30 หรือ 08-30" onblur="formatTime(this)">
-
-    <label>3) ชื่อขนส่ง</label>
-    <input type="text" id="transportName" placeholder="ชื่อบริษัทขนส่ง">
-
-    <div class="btn-group">
-        <button class="btn-checkin" onclick="handleSubmit('Check-in')">1) Check-in</button>
-        <button class="btn-loading" onclick="handleSubmit('Loading')">2) Loading</button>
-        <button class="btn-checkout" onclick="handleSubmit('Check-out')">3) Check-out</button>
+<div id="regModal" class="modal">
+    <div class="modal-content">
+        <h3>ลงทะเบียนข้อมูล Trip</h3>
+        <label>1) Trip no.</label>
+        <input type="number" id="tripNo" placeholder="ตัวเลขเท่านั้น">
+        <label>2) Time slot</label>
+        <input type="text" id="timeSlot" placeholder="เช่น 08.30 หรือ 08-30" onblur="formatTime(this)">
+        <label>3) ชื่อขนส่ง</label>
+        <input type="text" id="transportName">
+        <button class="btn-reg" style="margin-top:15px;" onclick="registerTrip()">บันทึกข้อมูล</button>
     </div>
 </div>
 
+<div class="container">
+    <div id="displayInfo" class="info-box"></div>
+    <div class="btn-group">
+        <button id="btn1" class="btn-checkin" onclick="handleSubmit('Check-in')" disabled>1) Check-in</button>
+        <button id="btn2" class="btn-loading" onclick="handleSubmit('Loading')" disabled>2) Loading</button>
+        <button id="btn3" class="btn-checkout" onclick="handleSubmit('Check-out')" disabled>3) Check-out</button>
+    </div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-    // จุดที่แก้ไข: เปลี่ยนตัวอักษร . , - ให้เป็น :
+    let currentData = {};
+    let step = 1;
+
+    // เริ่มต้น LIFF
+    liff.init({ liffId: "ใส่_LIFF_ID_ของคุณ" });
+
     function formatTime(input) {
-        input.value = input.value.replace(/[.,-]/g, ':');
+        input.value = input.value.replace(/[.,\-;/]/g, ':');
     }
 
-    async function handleSubmit(action) {
+    function registerTrip() {
         const tripNo = document.getElementById('tripNo').value;
         const timeSlot = document.getElementById('timeSlot').value;
         const transportName = document.getElementById('transportName').value;
 
-        if (!tripNo || !timeSlot || !transportName) {
-            alert("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
-            return;
-        }
+        if (!tripNo || !timeSlot || !transportName) return alert("กรุณากรอกข้อมูลให้ครบ");
 
-        // จุดที่แก้ไข: ข้อความแจ้งเตือนตามที่คุณต้องการ
-        let successMsg = "";
-        if (action === 'Check-in') successMsg = "ลงเวลาเข้าพื้นที่เรียบร้อยค่ะ";
-        else if (action === 'Loading') successMsg = "ลงเวลาเข้าโหลดเรียบร้อยค่ะ";
-        else if (action === 'Check-out') successMsg = "ลงเวลาออกจากพื้นที่คลังสินค้าแล้วค่ะ เดินทางปลอดภัยค่ะ";
+        currentData = { tripNo, timeSlot, transportName };
+        
+        // โชว์ข้อมูลที่กรอกในหน้าเว็บ
+        document.getElementById('displayInfo').innerHTML = `<b>Trip:</b> ${tripNo} | <b>Time:</b> ${timeSlot}<br><b>ขนส่ง:</b> ${transportName}`;
+        document.getElementById('displayInfo').style.display = "block";
+        
+        // ปิด Modal และเปิดปุ่มที่ 1
+        document.getElementById('regModal').style.display = "none";
+        document.getElementById('btn1').disabled = false;
 
+        // ส่งข้อความเข้าแชท LINE
+        liff.sendMessages([{
+            type: 'text',
+            text: `ลงทะเบียน Trip เรียบร้อยแล้ว\nTrip No: ${tripNo}\nTime Slot: ${timeSlot}\nขนส่ง: ${transportName}`
+        }]);
+    }
+
+    async function handleSubmit(action) {
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            const payload = {
-                tripNo: tripNo,
-                timeSlot: timeSlot,
-                transportName: transportName,
-                action: action,
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude
-            };
+            const payload = { ...currentData, action, lat: pos.coords.latitude, lng: pos.coords.longitude };
+            
+            const response = await fetch('ใส่_URL_เว็บแอป_ของคุณ', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const result = await response.text();
 
-            try {
-                // *** สำคัญมาก: เปลี่ยน URL ด้านล่างนี้เป็น URL จาก Google Apps Script ของคุณ ***
-                const scriptURL = 'https://script.google.com/macros/s/AKfycbwyyuP68M-Y4xE-wg0vSBTC48FIrL9J7U1Rq5daUNMhl7ocJRkBavaPRsv7ko-6X5Bn/exec'; 
-                
-                const response = await fetch(scriptURL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.text();
-                
-                if (result === "Success") {
-                    alert(successMsg);
+            if (result === "Success") {
+                alert("บันทึก " + action + " สำเร็จ");
+                // จัดการลำดับปุ่ม
+                if (action === 'Check-in') {
+                    document.getElementById('btn1').disabled = true;
+                    document.getElementById('btn2').disabled = false;
+                } else if (action === 'Loading') {
+                    document.getElementById('btn2').disabled = true;
+                    document.getElementById('btn3').disabled = false;
                 } else {
-                    // จุดที่แก้ไข: เปลี่ยนข้อความรัศมีเป็น 500 เมตร
-                    alert("ขออภัย! คุณไม่ได้อยู่ในพื้นที่ที่กำหนด (รัศมี 500 เมตร) ไม่สามารถลงเวลาได้");
+                    document.getElementById('btn3').disabled = true;
+                    alert("ดำเนินการเสร็จสิ้นทุกขั้นตอนแล้วค่ะ");
                 }
-            } catch (err) {
-                alert("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
+            } else {
+                alert("คุณไม่ได้อยู่ในพื้นที่รัศมี 500 เมตร");
             }
-        }, (err) => {
-            alert("กรุณาเปิดการเข้าถึงตำแหน่งพิกัด (GPS) บนมือถือของคุณด้วยค่ะ");
-        }, { enableHighAccuracy: true }); // เพิ่มความแม่นยำสูงสุด
+        });
     }
 </script>
 </body>
