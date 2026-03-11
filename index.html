@@ -53,30 +53,36 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyyuP68M-Y4xE-wg0vSBTC48FIrL9J7U1Rq5daUNMhl7ocJRkBavaPRsv7ko-6X5Bn/exec';
     let currentData = {};
 
-    async function init() {
-        await liff.init({ liffId: "ใส่_LIFF_ID_ของคุณ" });
+async function init() {
+    await liff.init({ liffId: "ใส่_LIFF_ID_ของคุณ" }); // ใส่ ID ของคุณ
+    if (!liff.isLoggedIn()) {
+        liff.login();
+    } else {
         loadSavedData();
     }
+}
 
-    function formatTime(input) {
-        input.value = input.value.replace(/[.,\-;/]/g, ':');
-    }
+function loadSavedData() {
+    const saved = localStorage.getItem('trip_storage');
+    const displayInfo = document.getElementById('displayInfo');
+    const regModal = document.getElementById('regModal');
 
-    // โหลดข้อมูลที่เคยกรอกค้างไว้
-    function loadSavedData() {
-        const saved = localStorage.getItem('trip_storage');
-        if (saved) {
-            currentData = JSON.parse(saved);
-            const status = localStorage.getItem('trip_status') || 'registered';
-            
-            document.getElementById('displayInfo').innerHTML = `<b>Trip:</b> ${currentData.tripNo} | <b>Time:</b> ${currentData.timeSlot}<br><b>ขนส่ง:</b> ${currentData.transportName}`;
-            document.getElementById('displayInfo').style.display = "block";
-            
-            updateButtons(status);
-        } else {
-            document.getElementById('regModal').style.display = "block";
-        }
+    if (saved) {
+        // กรณีมีข้อมูลเก่า: แสดงแถบข้อมูลและเปิดปุ่มตามสถานะล่าสุด
+        currentData = JSON.parse(saved);
+        displayInfo.innerHTML = `<b>Trip:</b> ${currentData.tripNo} | <b>Time:</b> ${currentData.timeSlot}<br><b>ขนส่ง:</b> ${currentData.transportName}`;
+        displayInfo.style.display = "block";
+        regModal.style.display = "none"; // ปิดหน้ากรอก
+        
+        const status = localStorage.getItem('trip_status') || 'registered';
+        updateButtons(status);
+    } else {
+        // กรณีไม่มีข้อมูล (หรือเพิ่งกด Reset): บังคับเปิดหน้ากรอกทันที
+        displayInfo.style.display = "none";
+        regModal.style.display = "block"; // เปิดหน้ากรอก
+        updateButtons('none'); // ล็อคทุกปุ่มจนกว่าจะกรอกเสร็จ
     }
+}
 
     function registerTrip() {
         const tripNo = document.getElementById('tripNo').value;
