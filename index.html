@@ -84,26 +84,41 @@ function loadSavedData() {
     }
 }
 
-    function registerTrip() {
-        const tripNo = document.getElementById('tripNo').value;
-        const timeSlot = document.getElementById('timeSlot').value;
-        const transportName = document.getElementById('transportName').value;
+async function registerTrip() {
+    const tripNo = document.getElementById('tripNo').value;
+    const timeSlot = document.getElementById('timeSlot').value;
+    const transportName = document.getElementById('transportName').value;
 
-        if (!tripNo || !timeSlot || !transportName) return alert("กรุณากรอกข้อมูลให้ครบ");
+    if (!tripNo || !timeSlot || !transportName) return alert("กรุณากรอกข้อมูลให้ครบ");
 
-        currentData = { tripNo, timeSlot, transportName };
-        localStorage.setItem('trip_storage', JSON.stringify(currentData));
-        localStorage.setItem('trip_status', 'registered');
+    // เตรียมข้อมูลเพื่อส่ง (เพิ่ม action: "Registered" เพื่อให้ Apps Script รู้ว่าเป็นการเริ่มแถวใหม่)
+    currentData = { tripNo, timeSlot, transportName, action: "Registered" };
+    
+    // 1. บันทึกลงหน่วยความจำมือถือ (localStorage)
+    localStorage.setItem('trip_storage', JSON.stringify(currentData));
 
-        liff.sendMessages([{
-            type: 'text',
-            text: `📝 ลงทะเบียน Trip\nTrip No: ${tripNo}\nTime Slot: ${timeSlot}\nขนส่ง: ${transportName}`
-        }]);
+    // 2. ส่งข้อความเข้า LINE Chat (ต้องเปิดสิทธิ์ chat_message.write ก่อน)
+    liff.sendMessages([{
+        type: 'text',
+        text: `📝 ลงทะเบียน Trip\nNo: ${tripNo}\nTime: ${timeSlot}\nขนส่ง: ${transportName}`
+    }]);
 
-        document.getElementById('regModal').style.display = "none";
-        loadSavedData();
+    // 3. จุดสำคัญ: ส่งข้อมูลไปที่ Google Sheets ทันที!
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // เพิ่มเพื่อป้องกันปัญหา Cross-Origin ในบาง browser
+            body: JSON.stringify(currentData)
+        });
+        console.log("Data sent to Sheet");
+    } catch (e) {
+        console.error("Error sending to Sheet:", e);
     }
 
+    // ปิด Pop-up และแสดงหน้าปุ่มกด
+    document.getElementById('regModal').style.display = "none";
+    loadSavedData();
+}
     async function handleSubmit(action) {
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const payload = { ...currentData, action, lat: pos.coords.latitude, lng: pos.coords.longitude };
