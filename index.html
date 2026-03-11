@@ -91,7 +91,7 @@
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const payload = { ...currentData, action, lat: pos.coords.latitude, lng: pos.coords.longitude };
             
-            const response = await fetch('ใส่_URL_เว็บแอป_ของคุณ', {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbwyyuP68M-Y4xE-wg0vSBTC48FIrL9J7U1Rq5daUNMhl7ocJRkBavaPRsv7ko-6X5Bn/exec', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
