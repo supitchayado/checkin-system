@@ -131,7 +131,6 @@ async function registerTrip() {
                     
                     let nextStatus = '';
                     if (action === 'Check-in') nextStatus = 'checked_in';
-                    else if (action === 'Loading') nextStatus = 'loading';
                     else if (action === 'Check-out') {
                         resetApp(); 
                         return;
@@ -149,7 +148,6 @@ async function registerTrip() {
     function updateButtons(status) {
         document.getElementById('btn1').disabled = (status !== 'registered');
         document.getElementById('btn2').disabled = (status !== 'checked_in');
-        document.getElementById('btn3').disabled = (status !== 'loading');
     }
 
     function resetApp() {
