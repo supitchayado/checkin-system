@@ -17,7 +17,6 @@
         button:disabled { background-color: #ccc !important; cursor: not-allowed; opacity: 0.6; }
         .btn-reg { background-color: #1a73e8; }
         .btn-checkin { background-color: #28a745; }
-        .btn-loading { background-color: #f1c40f; color: #333; }
         .btn-checkout { background-color: #dc3545; }
         .info-box { background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; border-left: 5px solid #1a73e8; }
         .reset-link { text-align: center; margin-top: 15px; font-size: 12px; color: #888; text-decoration: underline; cursor: pointer; }
@@ -28,11 +27,12 @@
 <div id="regModal" class="modal">
     <div class="modal-content">
         <h3>ลงทะเบียน Trip ใหม่</h3>
+        <label>1) ช่องโหลดสินค้า</label>
         <label>1) Trip no.</label>
         <input type="number" id="tripNo">
         <label>2) Time slot</label>
         <input type="text" id="timeSlot" onblur="formatTime(this)">
-        <label>3) ชื่อขนส่ง</label>
+        <label>3) เลขทะเบียนขนส่ง</label>
         <input type="text" id="transportName">
         <button class="btn-reg" style="margin-top:15px;" onclick="registerTrip()">บันทึกข้อมูล</button>
     </div>
@@ -42,7 +42,6 @@
     <div id="displayInfo" class="info-box" style="display:none;"></div>
     <div class="btn-group">
         <button id="btn1" class="btn-checkin" onclick="handleSubmit('Check-in')" disabled>1) Check-in</button>
-        <button id="btn2" class="btn-loading" onclick="handleSubmit('Loading')" disabled>2) Loading</button>
         <button id="btn3" class="btn-checkout" onclick="handleSubmit('Check-out')" disabled>3) Check-out</button>
     </div>
     <div class="reset-link" onclick="resetApp()">เริ่ม Trip ใหม่ (ล้างข้อมูลเดิม)</div>
