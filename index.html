@@ -1,23 +1,76 @@
 <div id="regModal" class="modal">
     <div class="modal-content">
-        <h3>ลงทะเบียนและ Check-in</h3>
+        <h3>บันทึกข้อมูลและ Check-in</h3>
+        
         <label>เลือกช่องโหลดสินค้า (1-18)</label>
-        <select id="bayNo" style="width:100%; padding:10px; border-radius:8px; margin-bottom:10px;">
+        <select id="bayNo" class="form-input">
             <option value="">-- เลือกช่องโหลด --</option>
             <script>
                 for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);
             </script>
         </select>
 
-        <label>Trip no. (กรอกเฉพาะตัวเลข)</label>
-        <input type="number" id="tripNo" placeholder="เช่น 15">
+        <label>Trip no.</label>
+        <input type="number" id="tripNo" placeholder="กรอกเฉพาะตัวเลข เช่น 52">
 
-        <label>Time slot (เช่น 05:15)</label>
-        <input type="text" id="timeSlot" onblur="validateTime(this)" placeholder="05:15">
+        <label>Time slot (05:15)</label>
+        <input type="text" id="timeSlot" onblur="formatTime(this)" placeholder="เช่น 10:15">
 
         <label>เลขทะเบียนรถ</label>
-        <input type="text" id="plateNo" placeholder="กก 1234">
+        <input type="text" id="plateNo" placeholder="เช่น กก 1234">
 
-        <button class="btn-checkin" onclick="submitData('Check-in')">บันทึกและ Check-in ทันที</button>
+        <button class="btn-checkin" onclick="processData('Check-in')">บันทึกข้อมูลและ Check-in</button>
     </div>
 </div>
+
+<div id="mainUI" style="display:none;">
+    <div class="info-card" id="displayInfo"></div>
+    <button class="btn-checkout" onclick="processData('Check-out')">3) Check-out ออกจากช่องโหลด</button>
+    <p onclick="resetTrip()" style="color:blue; cursor:pointer; text-align:center;">เริ่ม Trip ใหม่ (ล้างข้อมูล)</p>
+</div>
+
+<script>
+// ฟังก์ชันแปลงเครื่องหมายเป็น : อัตโนมัติ
+function formatTime(input) {
+    input.value = input.value.replace(/[.,\-\/]/g, ':');
+}
+
+async function processData(action) {
+    const bayNo = document.getElementById('bayNo').value;
+    const tripNo = document.getElementById('tripNo').value;
+    const timeSlot = document.getElementById('timeSlot').value;
+    const plateNo = document.getElementById('plateNo').value;
+
+    if (!bayNo || !tripNo || !timeSlot || !plateNo) return alert("กรุณากรอกข้อมูลให้ครบ");
+
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const payload = {
+            action: action,
+            bayNo: bayNo,
+            tripNo: tripNo,
+            timeSlot: timeSlot,
+            plateNo: plateNo,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+        };
+
+        // ส่งข้อมูลเข้า Google Sheets
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.text();
+        if (result.includes("Success")) {
+            alert(action + " สำเร็จ!");
+            if(action === 'Check-in') {
+                localStorage.setItem('trip_storage', JSON.stringify(payload));
+                location.reload();
+            } else {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    });
+}
+</script>
