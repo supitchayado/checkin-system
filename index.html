@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics Checkpoint</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #1a73e8; --red: #d93025; --gray: #5f6368; }
-        body { font-family: 'Kanit', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--blue); margin-bottom: 20px; }
-        label { display: block; margin-top: 12px; font-weight: 600; font-size: 14px; }
-        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; margin-top: 25px; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; color: white; cursor: pointer; transition: 0.3s; }
+        :root { --primary: #1a73e8; --danger: #d93025; }
+        body { font-family: 'Kanit', sans-serif; background: #f8f9fa; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input, select { width: 100%; padding: 14px; margin-top: 5px; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 16px; margin-top: 30px; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
         button:disabled { background: #ccc !important; cursor: not-allowed; }
-        .btn-in { background: var(--blue); }
-        .btn-out { background: var(--red); }
+        .btn-in { background: var(--primary); }
+        .btn-out { background: var(--danger); }
         .hidden { display: none; }
     </style>
 </head>
@@ -30,60 +29,67 @@
             <script>for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);</script>
         </select>
         <label>2. Trip No.</label>
-        <input type="number" id="tripNo" placeholder="เช่น 15">
+        <input type="number" id="tripNo" placeholder="ตัวเลข เช่น 15">
         <label>3. Time Slot</label>
         <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="05:15">
-        <label>4. เลขทะเบียนรถ</label>
-        <input type="text" id="plateNo" placeholder="กก 1234">
-        <button id="btnIn" class="btn-in" onclick="sendData('Check-in')">บันทึกเข้า Sheet</button>
+        <label>4. เลขทะเบียนรถ (ค้นหา/กรอกใหม่)</label>
+        <input type="text" id="plateNo" list="plateList" placeholder="พิมพ์เลขทะเบียน...">
+        <datalist id="plateList"></datalist>
+        <button id="btnIn" class="btn-in" onclick="send('Check-in')">บันทึกข้อมูลเข้า Sheet</button>
     </div>
 
     <div id="page-out" class="hidden">
         <h2>🏁 บันทึก Check-out</h2>
-        <label>เลือกช่องโหลดที่ต้องการออก</label>
+        <label>เลือกช่องโหลดที่โหลดเสร็จ</label>
         <select id="bayOut">
             <option value="">-- เลือกช่อง 1-18 --</option>
             <script>for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);</script>
         </select>
-        <button id="btnOut" class="btn-out" onclick="sendData('Check-out')">ยืนยันรถออก</button>
+        <button id="btnOut" class="btn-out" onclick="send('Check-out')">ยืนยัน Check-out</button>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwG87iLZtvhVpKqKL4SmzluoN2gl1lMvtGXpIS8eumbbUXQIXu7yodhI3Y340nD4AMsGQ/exec"; // <--- วาง URL จาก Apps Script
-    
-    // ตรวจสอบพารามิเตอร์ ?page=in หรือ ?page=out
-    const urlParams = new URLSearchParams(window.location.search);
-    const page = urlParams.get('page');
-    if (page === 'out') document.getElementById('page-out').classList.remove('hidden');
-    else document.getElementById('page-in').classList.remove('hidden');
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVZp61hS3AKHyXshst9Y9TGi3yH7Coxkd5P4cIRfrUw7RQ7rIVZhhh5KBdBbwK5cOXVg/exec"; 
 
-    async function sendData(action) {
+    // โหลดข้อมูลทะเบียนรถทำ Autocomplete
+    window.onload = async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        document.getElementById(page === 'out' ? 'page-out' : 'page-in').classList.remove('hidden');
+
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const plates = await res.json();
+            const list = document.getElementById('plateList');
+            plates.forEach(p => { let opt = document.createElement('option'); opt.value = p; list.appendChild(opt); });
+        } catch(e) { console.error("Database loading failed"); }
+    };
+
+    async function send(action) {
         const btn = action === 'Check-in' ? document.getElementById('btnIn') : document.getElementById('btnOut');
-        const bayNo = action === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value;
-        const tripNo = document.getElementById('tripNo').value;
-        const timeSlot = document.getElementById('timeSlot').value;
-        const plateNo = document.getElementById('plateNo').value;
+        const data = {
+            action: action,
+            bayNo: action === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value,
+            tripNo: document.getElementById('tripNo').value,
+            timeSlot: document.getElementById('timeSlot').value,
+            plateNo: document.getElementById('plateNo').value
+        };
 
-        if (!bayNo) return alert("กรุณาเลือกช่องโหลด");
+        if (!data.bayNo) return alert("กรุณาเลือกช่องโหลด");
         
-        // ปิดปุ่มทันที
         btn.disabled = true;
         btn.innerText = "กำลังบันทึก...";
 
         try {
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action, bayNo, tripNo, timeSlot, plateNo })
-            });
+            const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
             const result = await response.text();
             alert(result);
             if (result.includes("Success")) location.reload();
-            else btn.disabled = false; // ถ้า error ให้เปิดปุ่มใหม่
+            else { btn.disabled = false; btn.innerText = "ลองอีกครั้ง"; }
         } catch (e) {
-            alert("เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่");
+            alert("เกิดข้อผิดพลาด");
             btn.disabled = false;
-            btn.innerText = "ลองอีกครั้ง";
         }
     }
 </script>
