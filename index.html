@@ -1,163 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Kanit', sans-serif; padding: 20px; background-color: #f0f2f5; }
-        .container { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: white; margin: 15% auto; padding: 20px; border-radius: 15px; width: 85%; }
-        label { display: block; margin-top: 10px; font-weight: 600; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        .btn-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; color: white; cursor: pointer; }
-        button:disabled { background-color: #ccc !important; cursor: not-allowed; opacity: 0.6; }
-        .btn-reg { background-color: #1a73e8; }
-        .btn-checkin { background-color: #28a745; }
-        .btn-checkout { background-color: #dc3545; }
-        .info-box { background: #e8f0fe; padding: 15px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; border-left: 5px solid #1a73e8; }
-        .reset-link { text-align: center; margin-top: 15px; font-size: 12px; color: #888; text-decoration: underline; cursor: pointer; }
-    </style>
-</head>
-<body>
-
 <div id="regModal" class="modal">
     <div class="modal-content">
-        <h3>ลงทะเบียน Trip ใหม่</h3>
-        <label>1) ช่องโหลดสินค้า</label>
-        <label>1) Trip no.</label>
-        <input type="number" id="tripNo">
-        <label>2) Time slot</label>
-        <input type="text" id="timeSlot" onblur="formatTime(this)">
-        <label>3) เลขทะเบียนขนส่ง</label>
-        <input type="text" id="transportName">
-        <button class="btn-reg" style="margin-top:15px;" onclick="registerTrip()">บันทึกข้อมูล</button>
+        <h3>ลงทะเบียนและ Check-in</h3>
+        <label>เลือกช่องโหลดสินค้า (1-18)</label>
+        <select id="bayNo" style="width:100%; padding:10px; border-radius:8px; margin-bottom:10px;">
+            <option value="">-- เลือกช่องโหลด --</option>
+            <script>
+                for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);
+            </script>
+        </select>
+
+        <label>Trip no. (กรอกเฉพาะตัวเลข)</label>
+        <input type="number" id="tripNo" placeholder="เช่น 15">
+
+        <label>Time slot (เช่น 05:15)</label>
+        <input type="text" id="timeSlot" onblur="validateTime(this)" placeholder="05:15">
+
+        <label>เลขทะเบียนรถ</label>
+        <input type="text" id="plateNo" placeholder="กก 1234">
+
+        <button class="btn-checkin" onclick="submitData('Check-in')">บันทึกและ Check-in ทันที</button>
     </div>
 </div>
-
-<div class="container">
-    <div id="displayInfo" class="info-box" style="display:none;"></div>
-    <div class="btn-group">
-        <button id="btn1" class="btn-checkin" onclick="handleSubmit('Check-in')" disabled>1) Check-in</button>
-        <button id="btn3" class="btn-checkout" onclick="handleSubmit('Check-out')" disabled>3) Check-out</button>
-    </div>
-    <div class="reset-link" onclick="resetApp()">เริ่ม Trip ใหม่ (ล้างข้อมูลเดิม)</div>
-</div>
-
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYujyDiMUhqIN7CUf5fabqdB1jzEnCHI-ynvOikY9kVmNAuFIkIiUZz5xRaml6XrYyvw/exec';
-    let currentData = {};
-
-async function init() {
-    await liff.init({ liffId: "2009407071-HDZ8c153" }); // ใส่ ID ของคุณ
-    if (!liff.isLoggedIn()) {
-        liff.login();
-    } else {
-        loadSavedData();
-    }
-}
-
-function loadSavedData() {
-    const saved = localStorage.getItem('trip_storage');
-    const displayInfo = document.getElementById('displayInfo');
-    const regModal = document.getElementById('regModal');
-
-    if (saved) {
-        // กรณีมีข้อมูลเก่า: แสดงแถบข้อมูลและเปิดปุ่มตามสถานะล่าสุด
-        currentData = JSON.parse(saved);
-        displayInfo.innerHTML = `<b>Trip:</b> ${currentData.tripNo} | <b>Time:</b> ${currentData.timeSlot}<br><b>ขนส่ง:</b> ${currentData.transportName}`;
-        displayInfo.style.display = "block";
-        regModal.style.display = "none"; // ปิดหน้ากรอก
-        
-        const status = localStorage.getItem('trip_status') || 'registered';
-        updateButtons(status);
-    } else {
-        // กรณีไม่มีข้อมูล (หรือเพิ่งกด Reset): บังคับเปิดหน้ากรอกทันที
-        displayInfo.style.display = "none";
-        regModal.style.display = "block"; // เปิดหน้ากรอก
-        updateButtons('none'); // ล็อคทุกปุ่มจนกว่าจะกรอกเสร็จ
-    }
-}
-
-async function registerTrip() {
-    const tripNo = document.getElementById('tripNo').value;
-    const timeSlot = document.getElementById('timeSlot').value;
-    const transportName = document.getElementById('transportName').value;
-
-    if (!tripNo || !timeSlot || !transportName) return alert("กรุณากรอกข้อมูลให้ครบ");
-
-    // เตรียมข้อมูลเพื่อส่ง (เพิ่ม action: "Registered" เพื่อให้ Apps Script รู้ว่าเป็นการเริ่มแถวใหม่)
-    currentData = { tripNo, timeSlot, transportName, action: "Registered" };
-    
-    // 1. บันทึกลงหน่วยความจำมือถือ (localStorage)
-    localStorage.setItem('trip_storage', JSON.stringify(currentData));
-
-    // 2. ส่งข้อความเข้า LINE Chat (ต้องเปิดสิทธิ์ chat_message.write ก่อน)
-    liff.sendMessages([{
-        type: 'text',
-        text: `📝 ลงทะเบียน Trip\nNo: ${tripNo}\nTime: ${timeSlot}\nขนส่ง: ${transportName}`
-    }]);
-
-    // 3. จุดสำคัญ: ส่งข้อมูลไปที่ Google Sheets ทันที!
-    try {
-        await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors', // เพิ่มเพื่อป้องกันปัญหา Cross-Origin ในบาง browser
-            body: JSON.stringify(currentData)
-        });
-        console.log("Data sent to Sheet");
-    } catch (e) {
-        console.error("Error sending to Sheet:", e);
-    }
-
-    // ปิด Pop-up และแสดงหน้าปุ่มกด
-    document.getElementById('regModal').style.display = "none";
-    loadSavedData();
-}
-    async function handleSubmit(action) {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const payload = { ...currentData, action, lat: pos.coords.latitude, lng: pos.coords.longitude };
-            
-            try {
-                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const result = await response.text();
-
-                if (result === "Success") {
-                    alert("บันทึก " + action + " เรียบร้อยค่ะ");
-                    
-                    let nextStatus = '';
-                    if (action === 'Check-in') nextStatus = 'checked_in';
-                    else if (action === 'Check-out') {
-                        resetApp(); 
-                        return;
-                    }
-                    
-                    localStorage.setItem('trip_status', nextStatus);
-                    updateButtons(nextStatus);
-                } else {
-                    alert("ขออภัย! ไม่อยู่ในพื้นที่ 500 เมตร");
-                }
-            } catch (e) { alert("เกิดข้อผิดพลาดในการส่งข้อมูล"); }
-        });
-    }
-
-    function updateButtons(status) {
-        document.getElementById('btn1').disabled = (status !== 'registered');
-        document.getElementById('btn2').disabled = (status !== 'checked_in');
-    }
-
-    function resetApp() {
-        if(confirm("ต้องการเริ่ม Trip ใหม่ใช่หรือไม่? (ข้อมูลเดิมจะหายไป)")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    init();
-</script>
-</body>
-</html>
