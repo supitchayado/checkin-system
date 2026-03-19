@@ -47,7 +47,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCq206UxSolIBy_3tX8HMLla48uKDRTTjKD8bzkyQ6hZUvls_VyOm6mb1Qtm9h3bH0vw/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5_VwCnCzbTlHCVid3WaCaOVNJo2cP823vyg6tr3QPNmtXyZxBVvg-XU95DoHSJ4_BnQ/exec";
     
     // ตรวจสอบพารามิเตอร์จากลิงก์ ?page=in หรือ ?page=out
     const urlParams = new URLSearchParams(window.location.search);
@@ -55,24 +55,41 @@
     if (page === 'out') document.getElementById('page-out').classList.remove('hidden');
     else document.getElementById('page-in').classList.remove('hidden');
 
-    async function send(action) {
-        const data = {
-            action: action,
-            bayNo: action === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value,
-            tripNo: document.getElementById('tripNo').value,
-            timeSlot: document.getElementById('timeSlot').value,
-            plateNo: document.getElementById('plateNo').value
-        };
+async function send(action) {
+    // 1. ระบุตัวปุ่มที่ถูกกด
+    const btn = event.target; 
+    
+    const data = {
+        action: action,
+        bayNo: action === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value,
+        tripNo: document.getElementById('tripNo').value,
+        timeSlot: document.getElementById('timeSlot').value,
+        plateNo: document.getElementById('plateNo').value
+    };
 
-        if (!data.bayNo) return alert("กรุณาเลือกช่องโหลด");
+    if (!data.bayNo) return alert("กรุณาเลือกช่องโหลด");
 
-        try {
-            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
-            const result = await res.text();
-            alert(result);
-            location.reload(); 
-        } catch (e) { alert("เกิดข้อผิดพลาด"); }
+    // 2. ปิดการทำงานของปุ่มทันทีเพื่อป้องกันการกดซ้ำ
+    btn.disabled = true;
+    btn.innerText = "กำลังบันทึก...";
+    btn.style.opacity = "0.5";
+    btn.style.cursor = "not-allowed";
+
+    try {
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+        const result = await res.text();
+        
+        alert(result);
+        
+        // 3. เมื่อสำเร็จให้รีโหลดหน้า (ซึ่งจะทำให้ปุ่มกลับมาใช้งานได้ปกติสำหรับคันถัดไป)
+        location.reload(); 
+        
+    } catch (e) { 
+        alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        // กรณี Error ให้เปิดปุ่มคืนเผื่อพนักงานจะกดส่งใหม่
+        btn.disabled = false;
+        btn.innerText = action === 'Check-in' ? "บันทึกข้อมูลเข้า Sheet" : "กด Check-out (รถออก)";
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
     }
-</script>
-</body>
-</html>
+}
