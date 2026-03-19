@@ -1,76 +1,70 @@
-<div id="regModal" class="modal">
-    <div class="modal-content">
-        <h3>บันทึกข้อมูลและ Check-in</h3>
-        
-        <label>เลือกช่องโหลดสินค้า (1-18)</label>
-        <select id="bayNo" class="form-input">
-            <option value="">-- เลือกช่องโหลด --</option>
-            <script>
-                for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);
-            </script>
-        </select>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2563eb; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
+        body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 400px; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); margin-bottom: 20px; }
+        h2 { margin: 0 0 15px 0; font-size: 1.2rem; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        label { display: block; font-size: 0.85rem; color: #64748b; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-in { background: var(--primary); }
+        .btn-out { background: var(--danger); }
+        button:active { transform: scale(0.98); opacity: 0.9; }
+        .status-tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; background: #dcfce7; color: #166534; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>🚚 ลงทะเบียน & Check-in</h2>
+            <label>ช่องโหลดสินค้า</label>
+            <select id="bayIn">
+                <option value="">เลือกช่องโหลด 1-18</option>
+                <script>for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);</script>
+            </select>
+            <label>Trip No.</label>
+            <input type="number" id="tripNo" placeholder="ตัวเลขเท่านั้น">
+            <label>Time Slot</label>
+            <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="05:15">
+            <label>ทะเบียนรถ</label>
+            <input type="text" id="plateNo">
+            <button class="btn-in" onclick="sendData('Check-in')">บันทึกข้อมูลและเข้าคลัง</button>
+        </div>
 
-        <label>Trip no.</label>
-        <input type="number" id="tripNo" placeholder="กรอกเฉพาะตัวเลข เช่น 52">
-
-        <label>Time slot (05:15)</label>
-        <input type="text" id="timeSlot" onblur="formatTime(this)" placeholder="เช่น 10:15">
-
-        <label>เลขทะเบียนรถ</label>
-        <input type="text" id="plateNo" placeholder="เช่น กก 1234">
-
-        <button class="btn-checkin" onclick="processData('Check-in')">บันทึกข้อมูลและ Check-in</button>
+        <div class="card" style="border-top: 4px solid var(--danger);">
+            <h2>🏁 Check-out ออกจากคลัง</h2>
+            <label>กรอกเลขช่องที่โหลดเสร็จ</label>
+            <input type="number" id="bayOut" placeholder="เช่น 1, 5, 12">
+            <button class="btn-out" onclick="sendData('Check-out')">กด Check-out (รถออก)</button>
+        </div>
     </div>
-</div>
 
-<div id="mainUI" style="display:none;">
-    <div class="info-card" id="displayInfo"></div>
-    <button class="btn-checkout" onclick="processData('Check-out')">3) Check-out ออกจากช่องโหลด</button>
-    <p onclick="resetTrip()" style="color:blue; cursor:pointer; text-align:center;">เริ่ม Trip ใหม่ (ล้างข้อมูล)</p>
-</div>
+    <script>
+        const SCRIPT_URL = "ใส่_URL_เว็บแอป_ของคุณ";
 
-<script>
-// ฟังก์ชันแปลงเครื่องหมายเป็น : อัตโนมัติ
-function formatTime(input) {
-    input.value = input.value.replace(/[.,\-\/]/g, ':');
-}
+        async function sendData(act) {
+            const data = {
+                action: act,
+                bayNo: act === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value,
+                tripNo: document.getElementById('tripNo').value,
+                timeSlot: document.getElementById('timeSlot').value,
+                plateNo: document.getElementById('plateNo').value
+            };
 
-async function processData(action) {
-    const bayNo = document.getElementById('bayNo').value;
-    const tripNo = document.getElementById('tripNo').value;
-    const timeSlot = document.getElementById('timeSlot').value;
-    const plateNo = document.getElementById('plateNo').value;
+            if(!data.bayNo) return alert("กรุณาระบุเลขช่องโหลด");
 
-    if (!bayNo || !tripNo || !timeSlot || !plateNo) return alert("กรุณากรอกข้อมูลให้ครบ");
-
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        const payload = {
-            action: action,
-            bayNo: bayNo,
-            tripNo: tripNo,
-            timeSlot: timeSlot,
-            plateNo: plateNo,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-        };
-
-        // ส่งข้อมูลเข้า Google Sheets
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.text();
-        if (result.includes("Success")) {
-            alert(action + " สำเร็จ!");
-            if(action === 'Check-in') {
-                localStorage.setItem('trip_storage', JSON.stringify(payload));
-                location.reload();
-            } else {
-                localStorage.clear();
-                location.reload();
-            }
+            try {
+                const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+                const msg = await res.text();
+                alert(msg);
+                if(msg.includes("Success")) location.reload();
+            } catch(e) { alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); }
         }
-    });
-}
-</script>
+    </script>
+</body>
+</html>
