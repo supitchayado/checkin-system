@@ -2,98 +2,172 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logistics Flow System</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #1a73e8; --danger: #d93025; }
-        body { font-family: 'Kanit', sans-serif; background: #f4f6f9; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 420px; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #555; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(26,115,232,0.2); }
-        button { width: 100%; padding: 15px; margin-top: 25px; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
-        button:disabled { background: #ccc !important; transform: none !important; }
-        .btn-in { background: var(--primary); box-shadow: 0 4px 10px rgba(26,115,232,0.3); }
-        .btn-out { background: var(--danger); box-shadow: 0 4px 10px rgba(217,48,37,0.3); }
-        button:active { transform: scale(0.98); }
+        :root { --blue: #1a73e8; --green: #34a853; --red: #d93025; --gray: #5f6368; }
+        body { font-family: 'Kanit', sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+        
+        /* Navigation Tabs */
+        .tabs { display: flex; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
+
+        .container { padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
+        
+        h2 { text-align: center; margin-top: 0; font-size: 20px; color: #333; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #555; }
+        input { width: 100%; padding: 15px; margin-top: 5px; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; font-size: 18px; }
+        
+        /* Big Buttons */
+        .main-btn { width: 100%; padding: 18px; margin-top: 25px; border: none; border-radius: 15px; font-size: 20px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
+        .main-btn:disabled { background: #ccc !important; }
+        .bg-blue { background: var(--blue); }
+        .bg-green { background: var(--green); }
+        .bg-red { background: var(--red); }
+
+        /* Grid for Bay Selection */
+        .grid-18 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .grid-btn { padding: 15px 0; font-size: 18px; font-weight: 600; border: 2px solid #eee; border-radius: 12px; background: white; cursor: pointer; }
+        .grid-btn.selected { background: var(--red); color: white; border-color: var(--red); }
+
+        .result-box { margin-top: 20px; padding: 15px; border-radius: 12px; background: #e8f0fe; text-align: center; border: 2px dashed var(--blue); display: none; }
+        .result-box h3 { margin: 5px 0; color: var(--blue); font-size: 24px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="page-in" class="hidden">
-        <h2>🚚 บันทึก Check-in</h2>
-        <label>1. เลือกช่องโหลดสินค้า</label>
-        <select id="bayIn">
-            <option value="">-- เลือกช่อง 1-18 --</option>
-            <script>for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);</script>
-        </select>
-        <label>2. Trip No.</label>
-        <input type="number" id="tripNo" placeholder="ตัวเลข เช่น 55">
-        <label>3. Time Slot</label>
-        <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="12:15">
-        <label>4. เลขทะเบียนรถ</label>
-        <input type="text" id="plateNo" list="plateList" placeholder="พิมพ์เพื่อค้นหา...">
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('entry')">1. ทางเข้า<br>(รปภ.หน้า)</button>
+    <button class="tab-btn" onclick="showTab('loading')">2. เริ่มโหลด<br>(รปภ.ใน)</button>
+    <button class="tab-btn" onclick="showTab('exit')">3. ขาออก<br>(รปภ.ออก)</button>
+</div>
+
+<div class="container">
+    <div id="tab-entry" class="card">
+        <h2>🚧 จุดตรวจรถเข้า</h2>
+        <label>เลขทะเบียนรถ (พิมพ์ค้นหา)</label>
+        <input type="text" id="plateNo" list="plateList" placeholder="เช่น กก 1234">
         <datalist id="plateList"></datalist>
-        <button id="btnIn" class="btn-in" onclick="sendData('Check-in')">บันทึกและรันคิว</button>
+        
+        <button id="btnEntry" class="main-btn bg-blue" onclick="sendEntry()">บันทึก & ออกคิว</button>
+        
+        <div id="entryResult" class="result-box">
+            <p>บันทึกสำเร็จ!</p>
+            <h3 id="resQue">คิวที่: -</h3>
+            <h3 id="resBay">ช่องโหลด: -</h3>
+            <p style="font-size: 12px; color: #666;">*กรุณาแจ้งเลขคิวและช่องให้คนขับ*</p>
+        </div>
     </div>
 
-    <div id="page-out" class="hidden">
-        <h2>🏁 บันทึก Check-out</h2>
-        <label>ระบุช่องโหลดที่โหลดเสร็จ</label>
-        <select id="bayOut">
-            <option value="">-- เลือกช่อง 1-18 --</option>
-            <script>for(let i=1; i<=18; i++) document.write(`<option value="${i}">ช่องที่ ${i}</option>`);</script>
-        </select>
-        <button id="btnOut" class="btn-out" onclick="sendData('Check-out')">ยืนยัน Check-out</button>
+    <div id="tab-loading" class="card hidden">
+        <h2>📦 บันทึกเริ่มโหลดสินค้า</h2>
+        <label>ระบุเลขคิว (1-30)</label>
+        <input type="number" id="queNo" placeholder="จดจากคนขับ">
+        <label>ระบุเวลา Slot</label>
+        <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="เช่น 05:15">
+        
+        <button id="btnLoad" class="main-btn bg-green" onclick="sendLoading()">บันทึกเวลาเข้าโหลด</button>
+    </div>
+
+    <div id="tab-exit" class="card hidden">
+        <h2>🏁 รถออกจากพื้นที่</h2>
+        <p style="font-weight: 600; color: #555;">จิ้มเบอร์ช่องโหลดที่รถออก:</p>
+        <div class="grid-18">
+            <script>
+                for(let i=1; i<=18; i++) {
+                    document.write(`<button class="grid-btn" onclick="selectExitBay(${i}, this)">${i}</button>`);
+                }
+            </script>
+        </div>
+        <input type="hidden" id="exitBay">
+        <button id="btnExit" class="main-btn bg-red hidden" onclick="sendExit()">ยืนยันรถออกพื้นที่ ✅</button>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzORTn0AKf4r5dwd1qvkAMgkP1j7vqRJcShCK46jlfqJHFAdpjvr6m9Ks2JdO5UDedvYA/exec"; 
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGhOc-agt5ntDLFfoGVb4O25S_NENmfPn2M96ivFrXqvi73FHxVbfcE3uxoHX63tdO-A/exec"; // <--- ใส่ URL ของคุณตรงนี้
 
+    function showTab(tabName) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.remove('hidden');
+        event.currentTarget.classList.add('active');
+    }
+
+    // โหลดทะเบียนรถสำหรับหน้าแรก
     window.onload = async () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const page = urlParams.get('page');
-        document.getElementById(page === 'out' ? 'page-out' : 'page-in').classList.remove('hidden');
-
         try {
             const res = await fetch(SCRIPT_URL);
             const plates = await res.json();
             const list = document.getElementById('plateList');
             plates.forEach(p => { let opt = document.createElement('option'); opt.value = p; list.appendChild(opt); });
-        } catch(e) { console.log("Autocomplete loading..."); }
+        } catch(e) {}
     };
 
-    async function sendData(action) {
-        const btn = action === 'Check-in' ? document.getElementById('btnIn') : document.getElementById('btnOut');
-        const bayNo = action === 'Check-in' ? document.getElementById('bayIn').value : document.getElementById('bayOut').value;
+    // 1. ส่งข้อมูลหน้าทางเข้า
+    async function sendEntry() {
+        const plateNo = document.getElementById('plateNo').value;
+        if(!plateNo) return alert("กรุณากรอกทะเบียน");
         
-        if (!bayNo) return alert("กรุณาเลือกช่องโหลด");
-
+        const btn = document.getElementById('btnEntry');
         btn.disabled = true;
-        btn.innerText = "กำลังบันทึก...";
-
-        const payload = {
-            action: action,
-            bayNo: bayNo,
-            tripNo: document.getElementById('tripNo').value,
-            timeSlot: document.getElementById('timeSlot').value,
-            plateNo: document.getElementById('plateNo').value
-        };
 
         try {
-            const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-            const result = await response.text();
-            alert(result);
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'Entry', plateNo }) });
+            const text = await res.text(); // ผลลัพธ์: "คิวที่: X | ช่องโหลด: Y"
+            
+            const parts = text.split('|');
+            document.getElementById('resQue').innerText = parts[0];
+            document.getElementById('resBay').innerText = parts[1];
+            document.getElementById('entryResult').style.display = 'block';
+            document.getElementById('plateNo').value = "";
+        } catch(e) { alert("Error!"); }
+        btn.disabled = false;
+    }
+
+    // 2. ส่งข้อมูลหน้าเริ่มโหลด
+    async function sendLoading() {
+        const queNo = document.getElementById('queNo').value;
+        const timeSlot = document.getElementById('timeSlot').value;
+        if(!queNo || !timeSlot) return alert("กรอกข้อมูลไม่ครบ");
+
+        const btn = document.getElementById('btnLoad');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'Load-Start', queNo, timeSlot }) });
+            alert(await res.text());
+            document.getElementById('queNo').value = "";
+            document.getElementById('timeSlot').value = "";
+        } catch(e) { alert("Error!"); }
+        btn.disabled = false;
+    }
+
+    // 3. จัดการหน้าขาออก
+    let lastExitBtn = null;
+    function selectExitBay(num, btn) {
+        if(lastExitBtn) lastExitBtn.classList.remove('selected');
+        btn.classList.add('selected');
+        lastExitBtn = btn;
+        document.getElementById('exitBay').value = num;
+        document.getElementById('btnExit').classList.remove('hidden');
+    }
+
+    async function sendExit() {
+        const bayNo = document.getElementById('exitBay').value;
+        const btn = document.getElementById('btnExit');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'Exit', bayNo }) });
+            alert(await res.text());
             location.reload();
-        } catch (e) {
-            alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
-            btn.disabled = false;
-            btn.innerText = "ลองอีกครั้ง";
-        }
+        } catch(e) { alert("Error!"); }
+        btn.disabled = false;
     }
 </script>
 </body>
