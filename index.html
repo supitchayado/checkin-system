@@ -1,58 +1,157 @@
-<div id="tab-entry" class="card">
-    <h2>🚧 จุดตรวจรถเข้า (รปภ.หน้า)</h2>
-    
-    <label>1. เลขทะเบียนรถ (พิมพ์ค้นหา)</label>
-    <input type="text" id="plateNo" list="plateList" placeholder="เช่น กก 1234">
-    <datalist id="plateList"></datalist>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Warehouse Queue System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --blue: #1a73e8; --green: #2e7d32; --red: #d32f2f; }
+        body { font-family: 'Kanit', sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+        
+        /* แถบสีด้านบนแยกตามขั้นตอน */
+        .tabs { display: flex; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: #f8f9fa; font-size: 14px; font-weight: 600; color: #5f6368; cursor: pointer; transition: 0.3s; }
+        
+        /* สีชัดเจนเมื่อเลือก */
+        .tab-btn.active.t-entry { background: var(--blue); color: white; }
+        .tab-btn.active.t-load { background: var(--green); color: white; }
+        .tab-btn.active.t-exit { background: var(--red); color: white; }
 
-    <label>2. เลข Trip No. (เฉพาะตัวเลข)</label>
-    <input type="number" id="tripNoEntry" placeholder="เช่น 15">
-    
-    <button id="btnEntry" class="main-btn bg-blue" onclick="sendEntry()">บันทึก & ออกคิว</button>
-    
-    <div id="entryResult" class="result-box">
-        <p>บันทึกสำเร็จ!</p>
-        <h3 id="resQue">คิวที่: -</h3>
-        <h3 id="resBay">ช่องโหลด: -</h3>
-        <p style="font-size: 12px; color: #666;">*แจ้งเลขคิวและช่องให้คนขับไปที่ช่องโหลด*</p>
+        .container { padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 450px; padding: 30px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); box-sizing: border-box; }
+        
+        h2 { text-align: center; margin-bottom: 25px; font-size: 22px; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 14px; color: #333; }
+        input { width: 100%; padding: 15px; margin-top: 8px; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 18px; }
+        input:focus { border-color: #aaa; outline: none; }
+        
+        .main-btn { width: 100%; padding: 20px; margin-top: 30px; border: none; border-radius: 15px; font-size: 20px; font-weight: 600; color: white; cursor: pointer; }
+        .main-btn:disabled { background: #ccc !important; }
+
+        /* สีปุ่มหลัก */
+        .btn-blue { background: var(--blue); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+        .btn-green { background: var(--green); box-shadow: 0 4px 12px rgba(46,125,50,0.3); }
+        .btn-red { background: var(--red); box-shadow: 0 4px 12px rgba(211,47,47,0.3); }
+
+        /* แผงปุ่มขาออก */
+        .grid-18 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+        .grid-btn { padding: 18px 0; font-size: 20px; font-weight: 600; border: 2px solid #eee; border-radius: 15px; background: white; cursor: pointer; }
+        .grid-btn.selected { background: var(--red); color: white; border-color: var(--red); }
+
+        .result-box { margin-top: 25px; padding: 20px; border-radius: 15px; background: #f1f8ff; text-align: center; border: 2px solid var(--blue); }
+        .result-box h3 { margin: 10px 0; font-size: 28px; color: var(--blue); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="tabs">
+    <button id="btn-t-entry" class="tab-btn t-entry active" onclick="showTab('entry')">1. รปภ.หน้า<br>(ทางเข้า)</button>
+    <button id="btn-t-load" class="tab-btn t-load" onclick="showTab('loading')">2. รปภ.ใน<br>(เริ่มโหลด)</button>
+    <button id="btn-t-exit" class="tab-btn t-exit" onclick="showTab('exit')">3. รปภ.ออก<br>(ขาออก)</button>
+</div>
+
+<div class="container">
+    <div id="tab-entry" class="card">
+        <h2 style="color: var(--blue);">🚧 บันทึกรถเข้า</h2>
+        <label>1. ทะเบียนรถ</label>
+        <input type="text" id="plateNo" list="plateList" placeholder="พิมพ์เลขทะเบียน">
+        <datalist id="plateList"></datalist>
+        <label>2. เลข Trip No. (กรอกแค่ตัวเลข)</label>
+        <input type="number" id="tripNo" placeholder="เช่น 25">
+        <button id="submitEntry" class="main-btn btn-blue" onclick="sendEntry()">บันทึกข้อมูล</button>
+        <div id="resBox" class="result-box hidden">
+            <h3 id="resQue">-</h3>
+            <h3 id="resBay">-</h3>
+        </div>
+    </div>
+
+    <div id="tab-loading" class="card hidden">
+        <h2 style="color: var(--green);">📦 เริ่มโหลดสินค้า</h2>
+        <label>ระบุเลขคิว (1-30)</label>
+        <input type="number" id="queNo" placeholder="เลขคิวบนบัตร">
+        <label>ระบุเวลา Slot</label>
+        <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="เช่น 08:30">
+        <button id="submitLoad" class="main-btn btn-green" onclick="sendLoad()">บันทึกเริ่มโหลด</button>
+    </div>
+
+    <div id="tab-exit" class="card hidden">
+        <h2 style="color: var(--red);">🏁 รถออกจากคลัง</h2>
+        <p style="text-align:center; font-weight:600;">จิ้มเบอร์ช่องโหลดที่รถออก:</p>
+        <div class="grid-18">
+            <script>for(let i=1; i<=18; i++) document.write(`<button class="grid-btn" onclick="selBay(${i}, this)">${i}</button>`);</script>
+        </div>
+        <button id="submitExit" class="main-btn btn-red hidden" onclick="sendExit()">ยืนยันรถออก ✅</button>
     </div>
 </div>
 
 <script>
-    // แก้ไขฟังก์ชัน sendEntry() ในส่วน script ด้านล่าง
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyb4tizdZlIzYyQFrF_MEN5rTTT_Gb_KYJ_VekVTd0ofrCc7NPW8qcDyirykaQP4mAd3A/exec"; // <--- สำคัญมาก!
+
+    function showTab(t) {
+        document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-'+t).classList.remove('hidden');
+        document.getElementById('btn-t-'+t).classList.add('active');
+    }
+
+    window.onload = async () => {
+        try {
+            const r = await fetch(SCRIPT_URL);
+            const plates = await r.json();
+            const list = document.getElementById('plateList');
+            plates.forEach(p => { let o = document.createElement('option'); o.value = p; list.appendChild(o); });
+        } catch(e) {}
+    };
+
     async function sendEntry() {
         const plateNo = document.getElementById('plateNo').value;
-        const tripNo = document.getElementById('tripNoEntry').value; // ดึงค่า Trip No.
-        
-        if(!plateNo || !tripNo) return alert("กรุณากรอกทะเบียนและเลข Trip");
-        
-        const btn = document.getElementById('btnEntry');
-        btn.disabled = true;
-        btn.innerText = "กำลังออกคิว...";
-
+        const tripNo = document.getElementById('tripNo').value;
+        if(!plateNo || !tripNo) return alert("กรอกข้อมูลให้ครบ");
+        const b = document.getElementById('submitEntry');
+        b.disabled = true; b.innerText = "กำลังออกคิว...";
         try {
-            const res = await fetch(SCRIPT_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'Entry', 
-                    plateNo: plateNo,
-                    tripNo: tripNo // ส่งเลข Trip ไปให้สคริปต์จัดการเติม tour-
-                }) 
-            });
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Entry', plateNo, tripNo})});
             const text = await res.text();
-            
-            const parts = text.split('|');
-            document.getElementById('resQue').innerText = parts[0];
-            document.getElementById('resBay').innerText = parts[1];
-            document.getElementById('entryResult').style.display = 'block';
-            
-            // ล้างค่ารอคันถัดไป
-            document.getElementById('plateNo').value = "";
-            document.getElementById('tripNoEntry').value = "";
-        } catch(e) { 
-            alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); 
-        }
-        btn.disabled = false;
-        btn.innerText = "บันทึก & ออกคิว";
+            const p = text.split('|');
+            document.getElementById('resQue').innerText = p[0];
+            document.getElementById('resBay').innerText = p[1];
+            document.getElementById('resBox').classList.remove('hidden');
+            document.getElementById('plateNo').value = ""; document.getElementById('tripNo').value = "";
+        } catch(e) { alert("ล้มเหลว"); }
+        b.disabled = false; b.innerText = "บันทึกข้อมูล";
+    }
+
+    async function sendLoad() {
+        const queNo = document.getElementById('queNo').value;
+        const timeSlot = document.getElementById('timeSlot').value;
+        if(!queNo || !timeSlot) return alert("กรอกข้อมูลให้ครบ");
+        const b = document.getElementById('submitLoad');
+        b.disabled = true;
+        try {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Load-Start', queNo, timeSlot})});
+            alert(await res.text());
+            document.getElementById('queNo').value = ""; document.getElementById('timeSlot').value = "";
+        } catch(e) { alert("ล้มเหลว"); }
+        b.disabled = false;
+    }
+
+    let selectedBay = null; let lastB = null;
+    function selBay(n, b) {
+        if(lastB) lastB.classList.remove('selected');
+        b.classList.add('selected'); lastB = b; selectedBay = n;
+        document.getElementById('submitExit').classList.remove('hidden');
+    }
+
+    async function sendExit() {
+        const b = document.getElementById('submitExit');
+        b.disabled = true;
+        try {
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Exit', bayNo: selectedBay})});
+            alert(await res.text()); location.reload();
+        } catch(e) { alert("ล้มเหลว"); b.disabled = false; }
     }
 </script>
+</body>
+</html>
