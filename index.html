@@ -3,151 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warehouse Management</title>
+    <title>Queue Control System</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #0d47a1; --green: #1b5e20; --red: #b71c1c; }
-        body { font-family: 'Kanit', sans-serif; background: #eef2f7; margin: 0; padding: 0; }
-        
-        /* Tab Bar สีชัดเจน */
-        .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .tab-btn { flex: 1; padding: 18px 5px; border: none; background: #f1f3f4; font-size: 14px; font-weight: 600; color: #5f6368; cursor: pointer; }
-        
+        :root { --blue: #0277bd; --green: #2e7d32; --red: #c62828; }
+        body { font-family: 'Kanit', sans-serif; background: #f4f7f9; margin: 0; }
+        .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .tab-btn { flex: 1; padding: 20px 5px; border: none; background: #eee; font-size: 14px; font-weight: 600; color: #666; cursor: pointer; }
         .tab-btn.active.t-entry { background: var(--blue); color: white; }
         .tab-btn.active.t-load { background: var(--green); color: white; }
         .tab-btn.active.t-exit { background: var(--red); color: white; }
-
         .container { padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 420px; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        
-        h2 { text-align: center; margin-bottom: 20px; font-size: 22px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 15px; margin-top: 5px; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; box-sizing: border-box; }
-        
-        .main-btn { width: 100%; padding: 18px; margin-top: 25px; border: none; border-radius: 12px; font-size: 20px; font-weight: 600; color: white; cursor: pointer; }
-        .main-btn:disabled { background: #ccc !important; }
-
+        .card { background: white; width: 100%; max-width: 400px; padding: 30px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { text-align: center; margin-top: 0; }
+        label { display: block; margin-top: 20px; font-weight: 600; }
+        input { width: 100%; padding: 15px; margin-top: 8px; border: 2px solid #ddd; border-radius: 12px; font-size: 22px; box-sizing: border-box; text-align: center; }
+        .main-btn { width: 100%; padding: 20px; margin-top: 30px; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; color: white; cursor: pointer; }
         .btn-entry { background: var(--blue); }
         .btn-load { background: var(--green); }
         .btn-exit { background: var(--red); }
-
         .grid-18 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .grid-btn { padding: 15px 0; font-size: 20px; font-weight: 600; border: 2px solid #ddd; border-radius: 12px; background: #fff; cursor: pointer; }
+        .grid-btn { padding: 15px 0; font-size: 22px; font-weight: bold; border: 2px solid #eee; border-radius: 12px; background: #fff; }
         .grid-btn.selected { background: var(--red); color: white; border-color: var(--red); }
-
-        .result-box { margin-top: 20px; padding: 15px; border-radius: 12px; background: #f0f7ff; border: 2px dashed var(--blue); text-align: center; }
-        .result-box h3 { margin: 5px 0; font-size: 26px; color: var(--blue); }
+        .result-box { margin-top: 20px; padding: 20px; border-radius: 15px; background: #e3f2fd; border: 2px solid var(--blue); text-align: center; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="tabs">
-    <button id="tab-btn-entry" class="tab-btn t-entry active" onclick="openTab('entry')">1. รปภ.หน้า<br>(ลงทะเบียน)</button>
-    <button id="tab-btn-load" class="tab-btn t-load" onclick="openTab('load')">2. รปภ.ใน<br>(เริ่มโหลด)</button>
-    <button id="tab-btn-exit" class="tab-btn t-exit" onclick="openTab('exit')">3. รปภ.ออก<br>(ปล่อยรถ)</button>
+    <button id="t-entry" class="tab-btn t-entry active" onclick="openTab('entry')">1. ทางเข้า<br>(Check-in)</button>
+    <button id="t-load" class="tab-btn t-load" onclick="openTab('load')">2. ในคลัง<br>(เริ่มโหลด)</button>
+    <button id="t-exit" class="tab-btn t-exit" onclick="openTab('exit')">3. ทางออก<br>(Check-out)</button>
 </div>
 
 <div class="container">
-    <div id="card-entry" class="card">
-        <h2 style="color: var(--blue);">🚧 บันทึกรถเข้าพื้นที่</h2>
-        <label>เลขทะเบียนรถ</label>
-        <input type="text" id="plateNo" list="plateList" placeholder="พิมพ์เพื่อค้นหา">
-        <datalist id="plateList"></datalist>
-        <label>เลข Trip No. (ใส่เฉพาะตัวเลข)</label>
-        <input type="number" id="tripNo" placeholder="เช่น 55">
-        <button id="btnEntry" class="main-btn btn-entry" onclick="sendEntry()">บันทึก & ออกคิว</button>
+    <div id="c-entry" class="card">
+        <h2 style="color: var(--blue);">🚧 ตรวจสอบเลข Trip</h2>
+        <label>กรอกเลขทริป (เช่น 78)</label>
+        <input type="number" id="tripNo" placeholder="00">
+        <button id="btnEntry" class="main-btn btn-entry" onclick="sendEntry()">ตรวจสอบ & ออกคิว</button>
         <div id="resBox" class="result-box hidden">
-            <h3 id="resQue">-</h3>
-            <h3 id="resBay">-</h3>
+            <h3 id="resQue" style="font-size:30px; margin:5px 0;">-</h3>
+            <h3 id="resBay" style="font-size:24px; margin:5px 0;">-</h3>
         </div>
     </div>
 
-    <div id="card-load" class="card hidden">
-        <h2 style="color: var(--green);">📦 เริ่มโหลดสินค้า</h2>
-        <label>ระบุเลขคิว (1-30)</label>
-        <input type="number" id="queNo" placeholder="เลขคิวจากคนขับ">
-        <label>ระบุเวลา Slot</label>
-        <input type="text" id="timeSlot" onblur="this.value=this.value.replace(/[.,\-\/]/g,':')" placeholder="เช่น 12:30">
-        <button id="btnLoad" class="main-btn btn-load" onclick="sendLoad()">บันทึกเข้าโหลด ✅</button>
+    <div id="c-load" class="card hidden">
+        <h2 style="color: var(--green);">📦 บันทึกการโหลด</h2>
+        <label>ระบุเลขคิว</label>
+        <input type="number" id="queNo" placeholder="เลขคิว">
+        <button id="btnLoad" class="main-btn btn-load" onclick="sendLoad()">เริ่มโหลดสินค้า</button>
     </div>
 
-    <div id="card-exit" class="card hidden">
-        <h2 style="color: var(--red);">🏁 รถออกจากคลัง</h2>
-        <p style="text-align:center; font-weight:600;">เลือกเลขช่องที่รถออก:</p>
+    <div id="c-exit" class="card hidden">
+        <h2 style="color: var(--red);">🏁 รถออกจากพื้นที่</h2>
         <div class="grid-18">
             <script>for(let i=1; i<=18; i++) document.write(`<button class="grid-btn" onclick="selBay(${i}, this)">${i}</button>`);</script>
         </div>
-        <button id="btnExit" class="main-btn btn-exit hidden" onclick="sendExit()">ยืนยันรถออก 🏁</button>
+        <button id="btnExit" class="main-btn btn-exit hidden" onclick="sendExit()">ยืนยันรถออก ✅</button>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvl2kg_7MpCHwyGZ65RCD7-BHJW6i0xFfT89C0HAs1_ZILuRP1IAEeNSfBtmx1wV2V/exec"; 
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby0drVAzEerhLS1oSaIzoHgn0_QHPaES7xEa9Is6gHMa0w80WuAwocIdrRnPnx7Mx9cFA/exec";
 
-    function openTab(name) {
+    function openTab(n) {
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('card-' + name).classList.remove('hidden');
-        document.getElementById('tab-btn-' + name).classList.add('active');
+        document.getElementById('c-'+n).classList.remove('hidden');
+        document.getElementById('t-'+n).classList.add('active');
     }
 
-    // โหลดทะเบียนรถ
-    window.onload = async () => {
-        try {
-            const res = await fetch(SCRIPT_URL);
-            const plates = await res.json();
-            const list = document.getElementById('plateList');
-            plates.forEach(p => { let o = document.createElement('option'); o.value = p; list.appendChild(o); });
-        } catch(e) {}
-    };
-
     async function sendEntry() {
-        const plateNo = document.getElementById('plateNo').value;
         const tripNo = document.getElementById('tripNo').value;
-        if(!plateNo || !tripNo) return alert("กรุณากรอกข้อมูลให้ครบ");
+        if(!tripNo) return alert("กรุณากรอกเลขทริป");
         const btn = document.getElementById('btnEntry');
-        btn.disabled = true; btn.innerText = "กำลังบันทึก...";
+        btn.disabled = true; btn.innerText = "กำลังตรวจสอบ...";
         try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Entry', plateNo, tripNo})});
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Entry', tripNo})});
             const text = await res.text();
-            const p = text.split('|');
-            document.getElementById('resQue').innerText = p[0];
-            document.getElementById('resBay').innerText = p[1];
-            document.getElementById('resBox').classList.remove('hidden');
-            document.getElementById('plateNo').value = ""; document.getElementById('tripNo').value = "";
+            if(text.includes("|")) {
+                const p = text.split('|');
+                document.getElementById('resQue').innerText = p[0];
+                document.getElementById('resBay').innerText = p[1];
+                document.getElementById('resBox').classList.remove('hidden');
+            } else { alert(text); }
         } catch(e) { alert("ล้มเหลว"); }
-        btn.disabled = false; btn.innerText = "บันทึก & ออกคิว";
+        btn.disabled = false; btn.innerText = "ตรวจสอบ & ออกคิว";
     }
 
     async function sendLoad() {
         const queNo = document.getElementById('queNo').value;
-        const timeSlot = document.getElementById('timeSlot').value;
-        if(!queNo || !timeSlot) return alert("กรุณากรอกข้อมูล");
-        const btn = document.getElementById('btnLoad');
-        btn.disabled = true;
+        if(!queNo) return alert("กรุณากรอกเลขคิว");
         try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Load-Start', queNo, timeSlot})});
-            alert(await res.text());
-            document.getElementById('queNo').value = ""; document.getElementById('timeSlot').value = "";
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Load-Start', queNo})});
+            alert(await res.text()); document.getElementById('queNo').value = "";
         } catch(e) { alert("ล้มเหลว"); }
-        btn.disabled = false;
     }
 
-    let selectedBay = null; let lastB = null;
+    let selB = null; let lastB = null;
     function selBay(n, b) {
-        if(lastB) lastB.classList.remove('selected');
-        b.classList.add('selected'); lastB = b; selectedBay = n;
-        document.getElementById('btnExit').classList.remove('hidden');
+        if(lastB) lastB.style.background = "#fff";
+        b.style.background = "var(--red)"; b.style.color = "#fff";
+        lastB = b; selB = n; document.getElementById('btnExit').classList.remove('hidden');
     }
 
     async function sendExit() {
-        const btn = document.getElementById('btnExit');
-        btn.disabled = true;
         try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Exit', bayNo: selectedBay})});
+            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Exit', bayNo: selB})});
             alert(await res.text()); location.reload();
-        } catch(e) { alert("ล้มเหลว"); btn.disabled = false; }
+        } catch(e) { alert("ล้มเหลว"); }
     }
 </script>
 </body>
