@@ -2,135 +2,123 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warehouse Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Pro Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500&display=swap" rel="stylesheet">
     <style>
-        :root { --blue: #0277bd; --green: #2e7d32; --red: #c62828; }
-        body { font-family: 'Kanit', sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
-        
-        .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .tab-btn { flex: 1; padding: 20px 5px; border: none; background: #eee; font-size: 14px; font-weight: 600; color: #666; cursor: pointer; }
-        .tab-btn.active.t-entry { background: var(--blue); color: white; }
-        .tab-btn.active.t-load { background: var(--green); color: white; }
-        .tab-btn.active.t-exit { background: var(--red); color: white; }
-
-        .container { padding: 15px; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 20px; box-sizing: border-box; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        
-        h2 { text-align: center; margin: 0 0 20px 0; font-size: 22px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 18px; margin-top: 8px; border: 2px solid #ddd; border-radius: 12px; font-size: 28px; box-sizing: border-box; text-align: center; font-weight: bold; }
-        
-        .main-btn { width: 100%; padding: 22px; margin-top: 25px; border: none; border-radius: 15px; font-size: 22px; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; }
-        .main-btn:active { transform: scale(0.98); }
-        .main-btn:disabled { background: #ccc !important; }
-
-        .btn-entry { background: var(--blue); }
-        .btn-load { background: var(--green); }
-        .btn-exit { background: var(--red); }
-
-        .grid-18 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
-        .grid-btn { padding: 20px 0; font-size: 24px; font-weight: bold; border: 2px solid #eee; border-radius: 15px; background: #fff; cursor: pointer; }
-        
-        .result-box { margin-top: 25px; padding: 20px; border-radius: 15px; background: #e3f2fd; border: 3px solid var(--blue); text-align: center; }
+        :root { --primary: #0277bd; --success: #2e7d32; --danger: #c62828; --bg: #f0f2f5; }
+        body { font-family: 'Kanit', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
+        .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: #eee; font-size: 13px; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .container { padding: 15px; max-width: 500px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 20px; box-sizing: border-box; text-align: center; }
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; color: white; cursor: pointer; }
+        .bay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .bay-item { padding: 15px 5px; border-radius: 12px; text-align: center; font-weight: bold; border: 2px solid #eee; font-size: 14px; }
+        .bay-free { background: #e8f5e9; color: var(--success); border-color: #c8e6c9; }
+        .bay-busy { background: #ffebee; color: var(--danger); border-color: #ffcdd2; }
         .hidden { display: none; }
+        .loader { text-align: center; color: #666; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="tabs">
-    <button id="t-entry" class="tab-btn t-entry active" onclick="openTab('entry')">1. รปภ.หน้า<br>(ลงทะเบียน)</button>
-    <button id="t-load" class="tab-btn t-load" onclick="openTab('load')">2. รปภ.ใน<br>(เริ่มโหลด)</button>
-    <button id="t-exit" class="tab-btn t-exit" onclick="openTab('exit')">3. รปภ.ออก<br>(ออกจากคลัง)</button>
+    <button class="tab-btn active" id="b-entry" onclick="showPage('entry')">1. ลงทะเบียน</button>
+    <button class="tab-btn" id="b-load" onclick="showPage('load')">2. เริ่มโหลด</button>
+    <button class="tab-btn" id="b-exit" onclick="showPage('exit')">3. ทางออก</button>
+    <button class="tab-btn" id="b-dash" onclick="showPage('dash')">📊 สถานะช่อง</button>
 </div>
 
 <div class="container">
-    <div id="c-entry" class="card">
-        <h2 style="color: var(--blue);">🚧 บันทึกรถเข้า</h2>
-        <label>กรอกเลข Trip (เฉพาะตัวเลข)</label>
-        <input type="number" id="tripNo" placeholder="เช่น 78" inputmode="numeric">
-        <button id="btnEntry" class="main-btn btn-entry" onclick="sendEntry()">บันทึก รอออกคิว&ช่องโหลด</button>
-        <div id="resBox" class="result-box hidden">
-            <h3 id="resQue" style="font-size:35px; margin:5px 0; color:var(--blue);">-</h3>
-            <h3 id="resBay" style="font-size:26px; margin:5px 0; color:#333;">-</h3>
-            <p style="color:#666; margin:0;">*แจ้งข้อมูลนี้ให้คนขับรถ*</p>
-        </div>
+    <div id="p-entry" class="card">
+        <h2 style="color:var(--primary); text-align:center;">🚧 บันทึกรถเข้า</h2>
+        <input type="number" id="tripIn" placeholder="กรอกเลข Trip" inputmode="numeric">
+        <button class="btn" style="background:var(--primary)" onclick="doAction('Entry')">ออกคิวทันที</button>
+        <p style="text-align:center; color:var(--primary); cursor:pointer; text-decoration:underline;" onclick="showPage('add-trip')">เพิ่ม Trip นอกแผน</p>
     </div>
 
-    <div id="c-load" class="card hidden">
-        <h2 style="color: var(--green);">📦 เริ่มโหลดสินค้า</h2>
-        <label>ระบุเลขคิวบนบัตร</label>
-        <input type="number" id="queNo" placeholder="เลขคิว" inputmode="numeric">
-        <button id="btnLoad" class="main-btn btn-load" onclick="sendLoad()">ยืนยันการเริ่มโหลด ✅</button>
+    <div id="p-add-trip" class="card hidden">
+        <h2 style="color:var(--success);">➕ เพิ่ม Trip ใหม่</h2>
+        <input type="text" id="newT" placeholder="เลข Trip (เช่น 500)">
+        <input type="text" id="newV" placeholder="ทะเบียนรถ">
+        <input type="time" id="newTime">
+        <button class="btn" style="background:var(--success)" onclick="doAction('AddNewTrip')">บันทึก</button>
+        <p style="text-align:center; color: #666; cursor:pointer;" onclick="showPage('entry')">ย้อนกลับ</p>
     </div>
 
-    <div id="c-exit" class="card hidden">
-        <h2 style="color: var(--red);">🏁 รถออกจากพื้นที่</h2>
-        <p style="text-align:center; font-weight:600;">เลือกเลขช่องที่รถออก:</p>
-        <div class="grid-18">
-            <script>for(let i=1; i<=18; i++) document.write(`<button class="grid-btn" onclick="selBay(${i}, this)">${i}</button>`);</script>
-        </div>
-        <button id="btnExit" class="main-btn btn-exit hidden" onclick="sendExit()">ยืนยันรถออก 🏁</button>
+    <div id="p-dash" class="card hidden">
+        <h2 style="text-align:center;">📊 สถานะช่องโหลด 1-18</h2>
+        <div id="loader" class="loader">กำลังดึงข้อมูล...</div>
+        <div id="bayStatus" class="bay-grid"></div>
+    </div>
+
+    <div id="p-load" class="card hidden">
+        <h2 style="color:var(--success); text-align:center;">📦 เริ่มโหลด</h2>
+        <input type="number" id="queL" placeholder="เลขคิว">
+        <button class="btn" style="background:var(--success)" onclick="doAction('Load-Start')">บันทึกเริ่มโหลด</button>
+    </div>
+
+    <div id="p-exit" class="card hidden">
+        <h2 style="color:var(--danger); text-align:center;">🏁 ทางออก</h2>
+        <p style="text-align:center; font-size:14px;">เลือกช่องที่รถกำลังออก:</p>
+        <div id="exitGrid" class="bay-grid"></div>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyG91VmxOAEQWEyXlJhgdcJ9amwcvmcoQhOgBqgdicQ1hM77Pj1NYtHleXoWYyw366aTw/exec"; 
+    const APP_URL = "https://script.google.com/macros/s/AKfycbzXryu6td3TF4cgdICnq4Qtxo1xAFj7dEtJihhi4WsTPC_bAJpJZ9cB2kzeXfXZ3B48WA/exec"; 
 
-    function openTab(n) {
+    function showPage(p) {
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('c-'+n).classList.remove('hidden');
-        document.getElementById('t-'+n).classList.add('active');
-        document.getElementById('resBox').classList.add('hidden');
+        document.getElementById('p-'+p).classList.remove('hidden');
+        document.getElementById('b-'+(p==='add-trip'?'entry':p)).classList.add('active');
+        if(p === 'dash' || p === 'exit') updateBays(p);
     }
 
-    async function sendEntry() {
-        const tripNo = document.getElementById('tripNo').value;
-        if(!tripNo) return alert("กรุณากรอกเลข Trip");
-        const btn = document.getElementById('btnEntry');
-        btn.disabled = true; btn.innerText = "กำลังค้นหาแผนงาน...";
+    async function updateBays(page) {
+        const loader = document.getElementById('loader');
+        if(loader) loader.classList.remove('hidden');
         try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Entry', tripNo})});
-            const text = await res.text();
-            if(text.includes("|")) {
-                const p = text.split('|');
-                document.getElementById('resQue').innerText = p[0];
-                document.getElementById('resBay').innerText = p[1];
-                document.getElementById('resBox').classList.remove('hidden');
-                document.getElementById('tripNo').value = "";
-            } else { alert(text); }
-        } catch(e) { alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); }
-        btn.disabled = false; btn.innerText = "ตรวจสอบแผน & ออกคิว";
+            const res = await fetch(APP_URL);
+            const data = await res.json();
+            const grid = page === 'dash' ? document.getElementById('bayStatus') : document.getElementById('exitGrid');
+            grid.innerHTML = "";
+            for(let i=1; i<=18; i++) {
+                const isBusy = data.bays[i];
+                const div = document.createElement('div');
+                div.className = `bay-item ${isBusy ? 'bay-busy' : 'bay-free'}`;
+                div.innerHTML = `ช่อง ${i}<br><span style="font-size:10px">${isBusy || 'ว่าง'}</span>`;
+                if(page === 'exit' && isBusy) {
+                    div.style.cursor = "pointer";
+                    div.onclick = () => doAction('Exit', i);
+                }
+                grid.appendChild(div);
+            }
+        } catch(e) { console.error(e); }
+        if(loader) loader.classList.add('hidden');
     }
 
-    async function sendLoad() {
-        const queNo = document.getElementById('queNo').value;
-        if(!queNo) return alert("กรุณากรอกเลขคิว");
-        const btn = document.getElementById('btnLoad');
-        btn.disabled = true;
+    async function doAction(act, val) {
+        let p = { action: act };
+        if(act==='Entry') p.tripNo = document.getElementById('tripIn').value;
+        if(act==='Load-Start') p.queNo = document.getElementById('queL').value;
+        if(act==='Exit') p.bayNo = val;
+        if(act==='AddNewTrip') {
+            p.tripNo = document.getElementById('newT').value;
+            p.vehicleNo = document.getElementById('newV').value;
+            p.loadTime = document.getElementById('newTime').value;
+        }
+
         try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Load-Start', queNo})});
-            alert(await res.text()); document.getElementById('queNo').value = "";
+            const r = await fetch(APP_URL, { method:'POST', body: JSON.stringify(p) });
+            const msg = await r.text();
+            alert(msg);
+            location.reload();
         } catch(e) { alert("ล้มเหลว"); }
-        btn.disabled = false;
-    }
-
-    let selB = null; let lastB = null;
-    function selBay(n, b) {
-        if(lastB) { lastB.style.background = "#fff"; lastB.style.color = "#000"; }
-        b.style.background = "var(--red)"; b.style.color = "#fff";
-        lastB = b; selB = n; document.getElementById('btnExit').classList.remove('hidden');
-    }
-
-    async function sendExit() {
-        const btn = document.getElementById('btnExit');
-        btn.disabled = true;
-        try {
-            const res = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify({action:'Exit', bayNo: selB})});
-            alert(await res.text()); location.reload();
-        } catch(e) { alert("ล้มเหลว"); btn.disabled = false; }
     }
 </script>
 </body>
