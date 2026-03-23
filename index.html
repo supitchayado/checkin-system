@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warehouse Dashboard v2</title>
+    <title>Warehouse Pro Dashboard</title>
     <style>
-        body { font-family: 'Kanit', sans-serif; background: #f4f7f6; margin: 0; }
-        .tabs { display: flex; background: #fff; position: sticky; top: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; font-weight: bold; cursor: pointer; color: #666; font-size: 13px; }
-        .tab-btn.active { color: #0277bd; border-bottom: 3px solid #0277bd; }
-        .container { padding: 15px; max-width: 800px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; color: white; cursor: pointer; }
-        .btn:disabled { background: #ccc !important; }
-        .bay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .bay { padding: 10px 5px; border-radius: 8px; text-align: center; font-size: 11px; font-weight: bold; border: 1px solid #ddd; }
-        .busy { background: #ffebee; color: #c62828; }
-        .free { background: #e8f5e9; color: #2e7d32; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-        th, td { border: 1px solid #eee; padding: 8px; text-align: left; }
-        th { background: #f9f9f9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; }
+        .tabs { display: flex; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; cursor: pointer; color: #555; }
+        .tab-btn.active { color: #007bff; border-bottom: 3px solid #007bff; }
+        .container { padding: 20px; max-width: 800px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1.2rem; box-sizing: border-box; margin: 15px 0; }
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn:disabled { background: #ccc !important; cursor: not-allowed; }
+        .bay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .bay { padding: 15px 5px; border-radius: 8px; text-align: center; border: 1px solid #eee; font-size: 0.9rem; }
+        .busy { background: #fff1f0; color: #f5222d; border-color: #ffa39e; }
+        .free { background: #f6ffed; color: #52c41a; border-color: #b7eb8f; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 15px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #fafafa; }
         .hidden { display: none; }
     </style>
 </head>
@@ -35,35 +35,44 @@
 
 <div class="container">
     <div id="p-entry" class="card">
-        <h2 style="text-align:center;">🚛 บันทึกรถเข้า</h2>
+        <h2 style="text-align:center;">🚛 ลงทะเบียนรถเข้า</h2>
         <input type="number" id="tripNo" placeholder="กรอกเลข Trip" inputmode="numeric">
-        <button id="btn-entry" class="btn" style="background:#0277bd" onclick="doAction('Entry')">ออกคิวทันที</button>
+        <button id="btn-entry" class="btn" style="background:#007bff; color:white;" onclick="doAction('Entry')">ออกคิวทันที</button>
     </div>
 
     <div id="p-load" class="card hidden">
         <h2 style="text-align:center;">📦 เริ่มโหลดสินค้า</h2>
-        <input type="number" id="queNo" placeholder="กรอกเลขคิว">
-        <button id="btn-load" class="btn" style="background:#2e7d32" onclick="doAction('Load-Start')">เริ่มโหลด</button>
+        <input type="number" id="queNo" placeholder="เลขคิว">
+        <button id="btn-load" class="btn" style="background:#52c41a; color:white;" onclick="doAction('Load-Start')">เริ่มโหลด</button>
     </div>
 
     <div id="p-exit" class="card hidden">
         <h2 style="text-align:center;">🏁 บันทึกทางออก</h2>
+        <p style="text-align:center; font-size:0.9rem; color:#888;">คลิกเลือก Trip ที่ต้องการให้ออก:</p>
         <div id="exitGrid" class="bay-grid"></div>
     </div>
 
     <div id="p-dash" class="card hidden">
         <h2 style="text-align:center;">📊 สรุปผลวันนี้</h2>
-        <div style="display:flex; justify-content:space-between; text-align:center; margin-bottom:15px;">
+        <div style="display:flex; justify-content:space-around; text-align:center; margin-bottom:20px;">
             <div><small>รอ</small><br><b id="s-wait">0</b></div>
             <div><small>โหลด</small><br><b id="s-load">0</b></div>
             <div><small>เสร็จ</small><br><b id="s-out">0</b></div>
             <div><small>สาย</small><br><b id="s-delay" style="color:red">0</b></div>
         </div>
-        <h3>⚠️ รายชื่อรถเข้าสาย</h3>
+
+        <h3>⚠️ รถเข้าโหลดล่าช้า (Delay)</h3>
         <div style="overflow-x:auto;">
-            <table>
+            <table id="delayTable">
                 <thead>
-                    <tr><th>Trip</th><th>คนขับ</th><th>โทร</th><th>SUB</th><th>ทะเบียน</th><th>แผน</th></tr>
+                    <tr>
+                        <th>Trip No.</th>
+                        <th>คนขับ</th>
+                        <th>เบอร์โทร</th>
+                        <th>SUB</th>
+                        <th>ทะเบียน</th>
+                        <th>แผน</th>
+                    </tr>
                 </thead>
                 <tbody id="delayBody"></tbody>
             </table>
@@ -72,7 +81,7 @@
 </div>
 
 <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxbgki-_4kjrGJisRBG5gxZiSBlDQAU1aBHHyeHd_gACUgEe9dNbrUYOtj3QbQT5yIkGw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycby-HwdxrzKHvpoiaitKKGD5s_e2HFEyDaTJPzhiDbZPtIFZJqwCfVGArhIouCGnkbosnw/exec";
 
     function showPage(p) {
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
@@ -96,11 +105,11 @@
             data.delays.forEach(d => {
                 html += `<tr><td>${d.trip}</td><td>${d.driver}</td><td>${d.phone}</td><td>${d.sub}</td><td>${d.vehicle}</td><td>${d.time}</td></tr>`;
             });
-            document.getElementById('delayBody').innerHTML = html || "<tr><td colspan='6' style='text-align:center'>ไม่มีข้อมูล</td></tr>";
+            document.getElementById('delayBody').innerHTML = html || "<tr><td colspan='6' style='text-align:center'>ไม่มีรถสาย</td></tr>";
         }
 
+        const grid = document.getElementById('exitGrid');
         if(page === 'exit') {
-            const grid = document.getElementById('exitGrid');
             grid.innerHTML = "";
             for(let i=1; i<=18; i++) {
                 const trip = data.bays[i];
@@ -114,8 +123,9 @@
     }
 
     async function doAction(act, val) {
-        const btn = document.querySelector('.btn:not(.hidden)');
-        if(btn) btn.disabled = true;
+        // ป้องกันการกดซ้ำ
+        const btn = act === 'Entry' ? document.getElementById('btn-entry') : document.getElementById('btn-load');
+        if(btn) { btn.disabled = true; btn.innerText = "กำลังประมวลผล..."; }
 
         let p = { action: act };
         if(act==='Entry') p.tripNo = document.getElementById('tripNo').value;
@@ -128,8 +138,8 @@
             alert(msg);
             location.reload();
         } catch(e) {
-            alert("Error: " + e);
-            if(btn) btn.disabled = false;
+            alert("เกิดข้อผิดพลาด: " + e);
+            if(btn) { btn.disabled = false; btn.innerText = "ลองอีกครั้ง"; }
         }
     }
 </script>
